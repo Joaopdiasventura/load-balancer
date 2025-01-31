@@ -1,4 +1,7 @@
-FROM nginx:1.24-alpine
+FROM nginx:latest
 
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/nginx.conf
+
+EXPOSE 80
+
+CMD envsubst '${SERVER_1} ${SERVER_2}' < /etc/nginx/templates/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'

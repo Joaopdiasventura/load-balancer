@@ -1,69 +1,21 @@
-# Load Balancer Test Application
+# Load Balancer Application
 
-This repository contains a simple test setup for an NGINX load balancer using Docker Compose. The configuration demonstrates how to distribute traffic between two backend services (`app` and `app2`) and includes instructions to disable access logs in NGINX.
+This repository contains a setup for an NGINX load balancer using Docker. The configuration demonstrates how to distribute traffic between two services.
 
 ## Features
 
-- **Load Balancing:** NGINX is configured to balance traffic between two backend services.
-- **Dockerized Environment:** Both NGINX and backend services are containerized using Docker Compose.
-
-> **Note:** This application is designed for testing purposes only and is not intended for production use.
-
-## Project Structure
-
-```
-project/
-├── docker-compose.yml
-├── app/
-│   └── Dockerfile
-├── app2/
-│   └── Dockerfile
-└── nginx/
-    ├── Dockerfile
-    └── nginx.conf
-```
+- **Load Balancing:** NGINX is configured to balance traffic between two services.
+- **Dockerized Environment:** Both NGINX and services are containerized using Docker Compose.
 
 ## How It Works
 
-1. **Backend Services:**
-   - Two Nestjs aplications (`app` and `app2`) run on ports `3000` and `3001`, respectively.
+1. **Services:**
+
+   - Two Nestjs services (`app-1` and `app-2`) run on ports `3000` and `3001`, respectively.
 
 2. **NGINX Configuration:**
    - NGINX acts as a load balancer for the two services.
-   - Traffic is distributed using the `proxy_pass` directive to the `proxy` upstream block.
-
-## Usage
-
-### Prerequisites
-
-- Docker
-
-### Steps to Run
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/Joaopdiasventura/load-balancer.git
-   cd load-balancer
-   ```
-
-2. Build and start the services:
-   ```bash
-   docker-compose up --build
-   ```
-
-3. Access the load balancer:
-   - Open your browser or use `curl` to visit `http://localhost`.
-   - Traffic will be distributed between `app` and `app2`.
-   - When accessed through the load balancer, these services will return:
-        - app: Responds with Hello World!
-        - app2: Responds with Hello World!2
-
-### Stop the Services
-
-To stop and clean up the services, run:
-```bash
-docker-compose down
-```
+   - Traffic is distributed using the `round-robin` `(rotation)` strategy.
 
 ## Configuration Details
 
@@ -71,8 +23,8 @@ docker-compose down
 
 ```nginx
 upstream proxy {
-    server app:3000;
-    server app2:3001;
+    server ${SERVER_1};
+    server ${SERVER_2};
 }
 
 server {
@@ -93,17 +45,18 @@ server {
 ### Docker Compose (`compose.yaml`)
 
 The `compose.yaml` file sets up the services and ensures they are connected to the same network:
+
 ```yaml
 services:
-  app:
-    build: "./app"
+  app-1:
+    build: "./app-1"
     ports:
       - "3000:3000"
     networks:
       - webnet
 
-  app2:
-    build: "./app2"
+  app-2:
+    build: "./app-2"
     ports:
       - "3001:3001"
     networks:
@@ -111,11 +64,14 @@ services:
 
   nginx:
     build: "./nginx"
+    environment:
+      - SERVER_1=app-1:3000
+      - SERVER_2=app-2:3001
     ports:
       - "80:80"
     depends_on:
-      - app
-      - app2
+      - app-1
+      - app-2
     networks:
       - webnet
 
@@ -123,6 +79,51 @@ networks:
   webnet:
 ```
 
-## License
+## Usage
 
-This project is distributed under the MIT License.
+### Prerequisites
+
+- Docker
+
+### Steps to Test
+
+1. Clone this repository:
+
+   ```bash
+   git clone https://github.com/Joaopdiasventura/load-balancer.git
+   cd load-balancer
+   ```
+
+2. Build and start the services:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Access the load balancer:
+   - Open your browser or use `curl` to visit `http://localhost`.
+   - Traffic will be distributed between `app-1` and `app-2`.
+   - When accessed through the load balancer, these services will return:
+     - app-1: Responds with Hello World!
+     - app-2: Responds with Hello World!2
+
+### Running the Load Balancer for your services
+
+Instead of building the image locally, you can pull the pre-built image directly from **Docker Hub** and use it to balance your services:
+
+1. **Pull the Docker image:**
+
+   ```bash
+   docker pull jpplay/nginx:latest
+   ```
+
+2. **Run the container:**
+
+   ```bash
+   docker run -d -p 80:80
+     -e SERVER_1="app-1:port"
+     -e SERVER_2="app-2:port"
+     --name nginx jpplay/nginx:latest
+   ```
+
+> **Note: Make sure your services (`app-1:port` and `app-2:port`) are avaliable** before starting the container.

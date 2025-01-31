@@ -1,13 +1,13 @@
 services:
-  app:
-    build: "./app"
+  app-1:
+    build: "./app-1"
     ports:
       - "3000:3000"
     networks:
       - webnet
 
-  app2:
-    build: "./app2"
+  app-2:
+    build: "./app-2"
     ports:
       - "3001:3001"
     networks:
@@ -15,11 +15,14 @@ services:
 
   nginx:
     build: "./nginx"
+    environment:
+      - SERVER_1=app-1:3000
+      - SERVER_2=app-2:3001
     ports:
       - "80:80"
     depends_on:
-      - app
-      - app2
+      - app-1
+      - app-2
     networks:
       - webnet
 
